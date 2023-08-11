@@ -1,4 +1,11 @@
 # 依赖注入
+## 依赖注入是什么
+[YouTube: Code Aesthetic](https://www.youtube.com/watch?v=J1f5b4vcxCQ)
+对同一行为的不同处理逻辑，使用统一的接口和不同的实现逻辑，需要哪种就使用哪种（可以用工厂方法获得）。
+![pic1](../assets/Spring/di-interface1.png)
+![pic2](../assets/Spring/di-interface2.png)
+![pic3](../assets/Spring/di-interface3.png)
+
 ## 依赖注入的几种方式
 [出处：Spring选择哪种注入方式](https://juejin.cn/post/7021902992706109476)
 ### 1. 构造器注入
@@ -8,7 +15,7 @@
 
 如果构造器注入时发生了循环依赖，在项目启动时就会报错BeanCurrentlyInCreationException，而Field注入只有在使用时才会报错
 
-### 2. setter方法注入
+ ### 2. setter方法注入
 可以重新配置或注入虽然方便，但是有些依赖需要不可变，使用此种方式产生不确定性
 
 ### 3. field注入
