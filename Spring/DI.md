@@ -1,7 +1,14 @@
-# 依赖注入
+# 控制反转IoC 与 依赖注入DI
+## 控制反转
+是面向对象编程中的一种设计原则，可以用来减低计算机代码之间的耦合度
+
+最常见的方式叫做依赖注入
+
+在Java和Spring中，通过容器从外界提供依赖，而不是让一个类在内部显示的创建对象获得依赖。
+
 ## 依赖注入是什么
+让一个对象接收它所依赖的其他对象
 [YouTube: Code Aesthetic](https://www.youtube.com/watch?v=J1f5b4vcxCQ)
-对同一行为的不同处理逻辑，使用统一的接口和不同的实现逻辑，需要哪种就使用哪种（可以用工厂方法获得）。
 ![pic1](../assets/Spring/di-interface1.png)
 ![pic2](../assets/Spring/di-interface2.png)
 ![pic3](../assets/Spring/di-interface3.png)
