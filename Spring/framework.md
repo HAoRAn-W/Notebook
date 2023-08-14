@@ -35,3 +35,19 @@ spring-webmvc：Spring MVC实现
 spring-websocket: 对WebSocket的支持，客户端和服务端可以双向通信
 
 spring-webflux: 响应式框架，不需要Servlet API，完全异步
+
+## Spring框架用到的设计模式
+### 工厂模式
+使用BeanFactory, ApplicationContext创建Bean对象
+### 代理模式
+Spring AOP通过代理完成切面的advise
+### 单例模式
+Bean默认都是单例
+### 适配器模式
+SpringMVC通过适配器来适配controller，提供给DispatcherServelet调用
+### 模板方法模式
+jdbcTemplate, hibernateTemplate等数据库操作类
+### 包装器模式
+### 观察者模式
+
+## Spring事务（TODO）
