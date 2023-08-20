@@ -383,7 +383,9 @@ Gap lock 保证了 Repeatable Read 下不会出现幻读(把符合 where 条件�
 | 5        | Meredith | 18            |
 | 11       | Taylor   | 22            |
 | 20       | Lea      | 28            |
+
 **检索单个值**
+
 ```sql
 ##############session 1
 
@@ -391,7 +393,7 @@ SET autocommit=0;
 SET session transaction isolation level REPEATABLE READ;
 
 START TRANSACTION;
-SELECT * FROM USER WHERE age=22 FOR UPDATE 
+SELECT * FROM USER WHERE age=22 FOR UPDATE
 
 ############session 2
 
@@ -406,7 +408,9 @@ INSERT INTO user VALUE(10, 'gap lock', 22) #阻塞
 INSERT INTO user VALUE(14, 'gap lock', 28) #阻塞
 INSERT INTO user VALUE(21, 'gap lock', 28) #成功
 ```
+
 **检索不存在的值**
+
 ```sql
 ##############session 1
 
@@ -414,7 +418,7 @@ SET autocommit=0;
 SET session transaction isolation level REPEATABLE READ;
 
 START TRANSACTION;
-SELECT * FROM USER WHERE age=30 FOR UPDATE 
+SELECT * FROM USER WHERE age=30 FOR UPDATE
 
 ############session 2
 
@@ -426,7 +430,9 @@ INSERT INTO user VALUE(13, 'gap lock', 28) #阻塞
 INSERT INTO user VALUE(14, 'gap lock', 100) #阻塞
 INSERT INTO user VALUE(15, 'gap lock', 27) #成功
 ```
+
 **检索范围**
+
 ```sql
 ##############session 1
 
@@ -434,7 +440,7 @@ SET autocommit=0;
 SET session transaction isolation level REPEATABLE READ;
 
 START TRANSACTION;
-SELECT * FROM USER WHERE age>=18 AND age<23 FOR UPDATE 
+SELECT * FROM USER WHERE age>=18 AND age<23 FOR UPDATE
 
 ############session 2
 
@@ -464,3 +470,78 @@ INSERT INTO user VALUE(19, 'select range', 28) #成功
 **Read committed**：普通的 select 使用**快照读（snapshot read）**，底层是 MVCC；带锁的 select...in share lock，select...for update 以及更新操作（update，delete，insert）使用**记录锁**
 
 **Repeatable read**：普通的 select 使用**快照读（snapshot read）**，底层是 MVCC；带锁的 select...in share lock，select...for update 以及更新操作（update，delete，insert）使用**当前读（current read）**，底层使用
+
+## B+树索引
+
+B 树：平衡多叉树
+
+- 阶数：一个节点最多有多少个孩子节点。（一般用字母 m 表示）
+- 关键字：节点上的数值就是关键字
+- 度：一个节点拥有的子节点的数量
+
+一颗 m 阶的 B-树，有以下特征：
+
+- 根结点至少有两个子女；
+- 每个非根节点所包含的关键字个数 j 满足：⌈m/2⌉ - 1 <= j <= m - 1
+- 有 k 个关键字(关键字按递增次序排列)的非叶结点恰好有 k+1 个孩子。
+- 所有的叶子结点都位于同一层。
+
+B+树是 B-树的变体，也是一颗多路搜索树。一棵 m 阶的 B+树主要有这些特点：
+
+- 每个结点至多有 m 个子女;
+- 非根节点关键值个数范围：m/2 <= k <= m-1
+- 相邻叶子节点是通过指针连起来的，并且是关键字大小排序的。
+
+**B+树和 B 树的区别：**
+
+- B-树内部节点是保存数据的;而 B+树的叶子节点才保存数据。
+- B+树相邻的叶子节点之间通过链表指针连起来
+- 查找过程中，B-树在找到具体的数值以后就结束，而 B+树则需要找到叶子结点
+- B-树中任何一个关键字出现且只出现在一个结点中，而 B+树可以出现多次。
+
+### InnoDB 的 B+树
+
+在 InnoDB 中，表数据文件本身就是按 B+Tree 组织的一个索引结构, 叶节点 data 域保存了完整的数据记录。这个索引的 key 是数据表的主键，因此 InnoDB 表数据文件本身就是主索引。
+![PK](../assets/Database/PKBplusTree.jpeg)
+
+InnoDB 的辅助索引 data 域存储相应记录主键的值而不是地址, 辅助索引搜索需要检索两遍索引：首先检索辅助索引获得主键，然后用主键到主索引中检索获得记录。
+
+(为什么不建议使用过长的字段作为主键，因为所有辅助索引都引用主索引，过长的主索引会令辅助索引变得过大。)
+![secondary](../assets/Database/SecondaryBplusTree.png)
+
+## 索引的最左匹配特性
+
+当索引是复合的数据结构，比如(name,age,sex)的时候，按照从左到右的顺序来建立搜索树，优先比较 name 来确定下一步的所搜方向，如果 name 相同再依次比较 age 和 sex，最后得到检索的数据
+
+假如索引为【A，B，C】
+
+查询【A】【A，B】 【A，B，C】，那么可以通过索引查询
+
+查询采用【A，C】，由于中间缺失了 B，只能用到 A 索引
+
+查询采用【B】 【B，C】 【C】，由于没有用到第一列索引，后面的索引也是用不到了
+
+一直向右匹配直到遇到范围查询(>、<、between、like)就停止匹配，比如 a 1="" and="" b="2" c=""> 3 and d = 4 如果建立(a,b,c,d)顺序的索引，d 是用不到索引的，如果建立(a,b,d,c)的索引则都可以用到，a,b,d 的顺序可以任意调整
+
+比如 a 1="" and="" b="2" c=""> 3 and d = 4 如果建立(a,b,c,d)顺序的索引，d 是用不到索引的，如果建立(a,b,d,c)的索引则都可以用到，a,b,d 的顺序可以任意调整
+
+=和 in 可以乱序，比如 a = 1 and b = 2 and c = 3 建立(a,b,c)索引可以任意顺序，mysql 的查询优化器会帮你优化成索引可以识别的形式
+
+## 建立合适的索引
+
+**1. 主键的选择**
+
+推荐使用一个与业务无关的**自增**字段作为**主键**
+
+非单调的主键会造成在插入新记录时数据文件为了维持 B+Tree 的特性而频繁的分裂调整，十分低效
+
+使用自增主键，那么每次插入新的记录，记录就会顺序添加到当前索引节点的后续位置，当一页写满，就会自动开辟一个新的页
+
+**2. 选择区分度高的列建立索引**
+区分度的公式是 count(distinct col)/count( \* )
+
+**3. 索引无法参与计算**
+索引列不能参与计算，比如 from_unixtime(create_time) = ’2014-05-29’就不能使用到索引。语句应该写成 create_time = unix_timestamp(’2014-05-29’);
+
+**4. 尽量扩展索引**
+尽量的扩展索引，不要新建索引。比如表中已经有 a 的索引，现在要加(a,b)的索引，那么只需要修改原来的索引即可，当然要考虑原有数据和线上使用情况
