@@ -244,3 +244,36 @@ Java 序列化机制会在运行时判断类的 serialVersionUID 来验证版本
 注意：静态变量不会被序列化。因为它是属于类的
 
 注意：serialVersionUID 也是被 static 修饰的，它不会被序列化，只会在反序列化的时候自动生成，然后赋值成我们指定的值。
+
+# Error 和 Exception 的区别
+
+Exception 和 Error 都是 Throwable 的子类。
+
+- Exception 异常：程序本身可以处理的异常。可以通过 catch 捕获。又分为 RuntimeException 和 CheckedException。
+  - 非受检异常：RuntimeException 类及其子类，如 NullPointerException，IndexOutOfBoundsException，ArithmeticException
+  - 受检异常：IOException，SQLException，ClassNotFoundException
+- Error 错误：程序无法处理的错误。无法通过 catch 捕获。如系统崩溃，内存不足，堆栈溢出等。
+
+## 非受检异常和受检异常的区别
+
+非受检异常在编译期间不会检查，是在 JVM 运行期间可能会出现的异常。
+
+受检异常会在编译期间检查调用者是否处理，受检异常是强制要求调用者处理的。
+
+## NoClassDefError 和 ClassNotFoundException 的区别
+
+NoClassDefError 是一个错误，是由于 JVM 或者 ClassLoader 尝试加载某个类的时候在内存中找不到该类的定义。该类在编译期存在，但是在运行时找不到了。
+
+ClassNotFoundException 是受检异常，需要捕获处理。当尝试动态加载类到内存中的时候没有在指定的路径找到。或者一个类加载器已经加载了，另一个类加载器又尝试去加载。
+
+## try catch finally 哪个可以省略
+
+catch 或者 finally 但是不能两个同时省略。
+
+## 如果在 catch 中 return 了，finally 还会执行吗
+
+finally 会在 return 之前执行。同时，如果在 finally 中还有 return，会返回 finally 的 return（即程序会提前退出）。如果在 finally 中只是修改返回值，那么最后 catch 的值返回的还是原来的值（finally 中的修改并没有生效，但如果返回的是引用类型，而且 finally 对引用类型的属性做了更改，这个是会生效的）
+
+## JVM 如何处理异常
+
+方法发生异常，创建异常对象，转交给 JVM，即抛出异常。JVM 顺着调用栈往上寻找可以处理异常的代码。如果没有找到的化，就会交给默认异常处理器（JVM 的一部分）处理，打印异常信息并终止程序。
